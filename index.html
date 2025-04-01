@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Z-City</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        #game-area {
+            width: 100vw;
+            height: 90vh;
+            background-color: #e0f7fa;
+            position: relative;
+            cursor: crosshair;
+        }
+
+        #toolbar {
+            width: 100vw;
+            height: 10vh;
+            background: linear-gradient(to bottom, #444, #222);
+            position: fixed;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.3);
+        }
+
+        #resources {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: black;
+            font-family: Arial, sans-serif;
+            display: flex;
+            gap: 15px;
+        }
+
+        .resource {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+
+        .xp-resource {
+            color: #0000ff;
+            font-family: 'Comic Sans MS', sans-serif;
+        }
+
+        #missions-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 10px 20px;
+            background: linear-gradient(to bottom, #55aa55, #338833);
+            color: white;
+            border: 1px solid #77cc77;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        #missions-btn:hover:not(:disabled) {
+            background: linear-gradient(to bottom, #77cc77, #55aa55);
+            transform: scale(1.05);
+        }
+
+        #missions-btn:disabled {
+            background: #444;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        #spin-btn {
+            position: absolute;
+            top: 50px;
+            right: 10px;
+            width: 50px;
+            height: 50px;
+            background: url('https://files.catbox.moe/wv54go.png') no-repeat center;
+            background-size: contain;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        #spin-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+        }
+
+        #spin-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        #missions-menu, #spin-menu {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 1001;
+            width: 300px;
+            align-items: center;
+        }
+
+        .mission {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+            width: 100%;
+        }
+
+        .mission.completed {
+            background: rgba(0, 255, 0, 0.2);
+        }
+
+        .mission button {
+            padding: 5px 10px;
+            background: #666;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .mission button:hover:not(:disabled) {
+            background: #888;
+        }
+
+        #missions-close, #spin-close {
+            padding: 10px;
+            background: #aa5555;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            align-self: center;
+        }
+
+        #missions-close:hover:not(:disabled), #spin-close:hover:not(:disabled) {
+            background: #cc7777;
+        }
+
+        #wheel {
+            width: 200px;
+            height: 200px;
+            background: conic-gradient(
+                #ffd700 0% 60%, /* 200 coins - 60% */
+                #ff8c00 60% 105%, /* 300 coins - 45% */
+                #00ced1 105% 160%, /* 30 XP - 55% */
+                #4682b4 160% 190%, /* 75 XP - 30% */
+                #ff4500 190% 203%, /* 550 coins - 13% */
+                #32cd32 203% 207.9% /* 1 cash - 4.9% */
+            );
+            border-radius: 50%;
+            position: relative;
+            transition: transform 3s ease-out;
+        }
+
+        #wheel::after {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 20px solid white;
+        }
+
+        #spin-action {
+            padding: 10px;
+            background: #55aa55;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #spin-action:hover:not(:disabled) {
+            background: #77cc77;
+        }
+
+        #spin-action:disabled {
+            background: #444;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        #spin-cooldown {
+            font-size: 14px;
+            color: #ddd;
+        }
+
+        .tool-button {
+            padding: 8px;
+            background: linear-gradient(to bottom, #777, #555);
+            color: white;
+            cursor: pointer;
+            border: 1px solid #888;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 90px;
+            height: 70px;
+            transition: transform 0.2s, background 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .tool-button:hover:not(:disabled) {
+            background: linear-gradient(to bottom, #999, #777);
+            transform: scale(1.05);
+        }
+
+        .tool-button:disabled {
+            background: #444;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .remove-button, .cancel-button {
+            padding: 8px;
+            background: linear-gradient(to bottom, #ff5555, #cc3333);
+            color: white;
+            cursor: pointer;
+            border: 1px solid #ff7777;
+            border-radius: 8px;
+            width: 90px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s, background 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .remove-button:hover:not(:disabled), .cancel-button:hover:not(:disabled) {
+            background: linear-gradient(to bottom, #ff7777, #ee5555);
+            transform: scale(1.05);
+        }
+
+        .building {
+            position: absolute;
+            user-select: none;
+        }
+
+        .house {
+            width: 60px;
+            height: 60px;
+            background-image: url('https://files.catbox.moe/c8qhtf.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+        }
+
+        .house-2 {
+            width: 60px;
+            height: 60px;
+            background-image: url('https://files.catbox.moe/e8s0u3.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+        }
+
+        .hospital {
+            width: 90px;
+            height: 90px;
+            background-image: url('https://files.catbox.moe/86e57a.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+        }
+
+        .bank {
+            width: 120px;
+            height: 120px;
+            background-image: url('https://files.catbox.moe/rqf7j6.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+        }
+
+        .office {
+            width: 120px;
+            height: 120px;
+            background-image: url('https://files.catbox.moe/35xnss.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+        }
+
+        .school {
+            width: 120px;
+            height: 120px;
+            background-image: url('https://files.catbox.moe/rzhw8t.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+        }
+
+        .museum {
+            width: 120px;
+            height: 120px;
+            background-image: url('https://files.catbox.moe/401fi5.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+        }
+
+        .building-icon {
+            width: 35px;
+            height: 35px;
+            background-size: contain;
+            background-repeat: no-repeat;
+        }
+
+        .cost-display {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 11px;
+            margin: 2px 0;
+        }
+
+        .collect-bubble {
+            position: absolute;
+            width: 50px;
+            height: 30px;
+            background: white;
+            border: 2px solid #333;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            left: 50%;
+            top: -40px;
+            transform: translateX(-50%);
+        }
+
+        .collect-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid #333;
+        }
+
+        .collect-bubble:hover {
+            background: #f0f0f0;
+        }
+
+        #message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        #close-message {
+            padding: 5px 10px;
+            background-color: #666;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #close-message:hover {
+            background-color: #888;
+        }
+
+        #cursor-building {
+            position: absolute;
+            pointer-events: none;
+            z-index: 999;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-area">
+        <div id="resources">
+            <div class="resource">
+                <img src="https://files.catbox.moe/uznq7t.png" width="20" height="20">
+                <span id="coin-count">200</span>
+            </div>
+            <div class="resource">
+                <img src="https://files.catbox.moe/1rnqci.png" width="20" height="20">
+                <span id="cash-count">5</span>
+            </div>
+            <div class="resource">
+                <img src="https://files.catbox.moe/qy47jj.png" width="20" height="20">
+                <span id="population-count">5</span>
+            </div>
+            <div class="resource xp-resource">
+                XP: <span id="xp-count">0</span>
+            </div>
+        </div>
+        <div id="cursor-building"></div>
+        <button id="missions-btn">Missions</button>
+        <button id="spin-btn"></button>
+    </div>
+    <div id="toolbar">
+        <button class="tool-button" id="house-btn">
+            <div class="building-icon" style="background-image: url('https://files.catbox.moe/c8qhtf.png')"></div>
+            <div class="cost-display"><img src="https://files.catbox.moe/uznq7t.png" width="12" height="12">50</div>
+            <span>House</span>
+        </button>
+        <button class="tool-button" id="house-2-btn">
+            <div class="building-icon" style="background-image: url('https://files.catbox.moe/e8s0u3.png')"></div>
+            <div class="cost-display"><img src="https://files.catbox.moe/uznq7t.png" width="12" height="12">100</div>
+            <span>House 2</span>
+        </button>
+        <button class="tool-button" id="hospital-btn">
+            <div class="building-icon" style="background-image: url('https://files.catbox.moe/86e57a.png')"></div>
+            <div class="cost-display"><img src="https://files.catbox.moe/uznq7t.png" width="12" height="12">175</div>
+            <span>Hospital</span>
+        </button>
+        <button class="tool-button" id="bank-btn">
+            <div class="building-icon" style="background-image: url('https://files.catbox.moe/rqf7j6.png')"></div>
+            <div class="cost-display"><img src="https://files.catbox.moe/uznq7t.png" width="12" height="12">350</div>
+            <span>Bank</span>
+        </button>
+        <button class="tool-button" id="office-btn">
+            <div class="building-icon" style="background-image: url('https://files.catbox.moe/35xnss.png')"></div>
+            <div class="cost-display">
+                <img src="https://files.catbox.moe/uznq7t.png" width="12" height="12">250
+                <img src="https://files.catbox.moe/1rnqci.png" width="12" height="12">1
+            </div>
+            <span>Office</span>
+        </button>
+        <button class="tool-button" id="school-btn">
+            <div class="building-icon" style="background-image: url('https://files.catbox.moe/rzhw8t.png')"></div>
+            <div class="cost-display"><img src="https://files.catbox.moe/uznq7t.png" width="12" height="12">500</div>
+            <span>School</span>
+        </button>
+        <button class="tool-button" id="museum-btn">
+            <div class="building-icon" style="background-image: url('https://files.catbox.moe/401fi5.png')"></div>
+            <div class="cost-display">
+                <img src="https://files.catbox.moe/uznq7t.png" width="12" height="12">750
+                <img src="https://files.catbox.moe/1rnqci.png" width="12" height="12">2
+            </div>
+            <span>Museum</span>
+        </button>
+        <button class="remove-button" id="remove-btn">Remove</button>
+    </div>
+    <div id="message-box">
+        <span id="message-text"></span>
+        <button id="close-message">Close</button>
+    </div>
+    <div id="missions-menu">
+        <div id="missions-list"></div>
+        <button id="missions-close">Close</button>
+    </div>
+    <div id="spin-menu">
+        <div id="wheel"></div>
+        <button id="spin-action">Spin</button>
+        <div id="spin-cooldown"></div>
+        <button id="spin-close">Close</button>
+    </div>
+
+    <script>
+        let selectedBuilding = null;
+        let removeMode = false;
+        const gameArea = document.getElementById('game-area');
+        const coinCount = document.getElementById('coin-count');
+        const cashCount = document.getElementById('cash-count');
+        const populationCount = document.getElementById('population-count');
+        const xpCount = document.getElementById('xp-count');
+        const toolbar = document.getElementById('toolbar');
+        const messageBox = document.getElementById('message-box');
+        const messageText = document.getElementById('message-text');
+        const closeMessage = document.getElementById('close-message');
+        const cursorBuilding = document.getElementById('cursor-building');
+        const missionsBtn = document.getElementById('missions-btn');
+        const missionsMenu = document.getElementById('missions-menu');
+        const missionsList = document.getElementById('missions-list');
+        const missionsClose = document.getElementById('missions-close');
+        const spinBtn = document.getElementById('spin-btn');
+        const spinMenu = document.getElementById('spin-menu');
+        const wheel = document.getElementById('wheel');
+        const spinAction = document.getElementById('spin-action');
+        const spinCooldown = document.getElementById('spin-cooldown');
+        const spinClose = document.getElementById('spin-close');
+        let coins = 200;
+        let cash = 5;
+        let population = 5;
+        let xp = 0;
+        let lastMilestone = 0;
+        let coinsCollectedForMission = 0;
+        let lastSpinTime = null;
+        const COOLDOWN_MS = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
+        const costs = {
+            'house': { coins: 50, cash: 0 },
+            'house-2': { coins: 100, cash: 0 },
+            'hospital': { coins: 175, cash: 0 },
+            'bank': { coins: 350, cash: 0 },
+            'office': { coins: 250, cash: 1 },
+            'school': { coins: 500, cash: 0 },
+            'museum': { coins: 750, cash: 2 }
+        };
+        const populationValues = {
+            'house': 1,
+            'house-2': 2,
+            'hospital': 5,
+            'bank': 3,
+            'office': 4,
+            'school': 10,
+            'museum': 12
+        };
+        const xpValues = {
+            'house': 5,
+            'house-2': 7,
+            'hospital': 15,
+            'bank': 21,
+            'office': 17,
+            'school': 39,
+            'museum': 50
+        };
+        const sizes = {
+            'house': 60,
+            'house-2': 60,
+            'hospital': 90,
+            'bank': 120,
+            'office': 120,
+            'school': 120,
+            'museum': 120
+        };
+        const houseBtn = document.getElementById('house-btn');
+        const house2Btn = document.getElementById('house-2-btn');
+        const hospitalBtn = document.getElementById('hospital-btn');
+        const bankBtn = document.getElementById('bank-btn');
+        const officeBtn = document.getElementById('office-btn');
+        const schoolBtn = document.getElementById('school-btn');
+        const museumBtn = document.getElementById('museum-btn');
+        const removeBtn = document.getElementById('remove-btn');
+        let hospitals = [];
+        let banks = [];
+        let offices = [];
+        let schools = [];
+        let museums = [];
+        let defaultToolbarContent = toolbar.innerHTML;
+
+        const missions = [
+            { id: 1, text: "Construct a building", check: () => gameArea.querySelectorAll('.building').length > 0, rewards: { xp: 20, coins: 150 }, completed: false, claimed: false },
+            { id: 2, text: "Reach 20 population", check: () => population >= 20, rewards: { xp: 25, coins: 150 }, completed: false, claimed: false },
+            { id: 3, text: "Construct a School", check: () => schools.length > 0, rewards: { xp: 40, coins: 0 }, completed: false, claimed: false },
+            { id: 4, text: "Collect 700 coins", check: () => coinsCollectedForMission >= 700, rewards: { xp: 100, coins: 0 }, completed: false, claimed: false }
+        ];
+        let currentMissionIndex = 0;
+
+        // Load saved progress
+        function loadProgress() {
+            const saved = localStorage.getItem('cityBuilderProgress');
+            if (saved) {
+                const data = JSON.parse(saved);
+                coins = data.coins || 200;
+                cash = data.cash || 5;
+                population = data.population || 5;
+                xp = data.xp || 0;
+                lastMilestone = data.lastMilestone || 0;
+                coinsCollectedForMission = data.coinsCollectedForMission || 0;
+                currentMissionIndex = data.currentMissionIndex || 0;
+                missions.forEach((mission, index) => {
+                    mission.completed = data.missions[index]?.completed || false;
+                    mission.claimed = data.missions[index]?.claimed || false;
+                });
+                lastSpinTime = data.lastSpinTime ? new Date(data.lastSpinTime) : null;
+
+                // Restore buildings
+                data.buildings?.forEach(b => {
+                    const building = document.createElement('div');
+                    building.classList.add('building', b.type);
+                    building.style.left = b.x + 'px';
+                    building.style.top = b.y + 'px';
+                    gameArea.appendChild(building);
+                    if (b.type === 'hospital') setupHospital(building);
+                    else if (b.type === 'bank') setupBank(building);
+                    else if (b.type === 'office') setupOffice(building);
+                    else if (b.type === 'school') setupSchool(building);
+                    else if (b.type === 'museum') setupMuseum(building);
+                });
+
+                updateUI();
+            }
+        }
+
+        // Save progress
+        function saveProgress() {
+            const buildings = [];
+            gameArea.querySelectorAll('.building:not(#cursor-building)').forEach(b => {
+                buildings.push({
+                    type: b.classList[1],
+                    x: parseFloat(b.style.left),
+                    y: parseFloat(b.style.top)
+                });
+            });
+            const data = {
+                coins,
+                cash,
+                population,
+                xp,
+                lastMilestone,
+                coinsCollectedForMission,
+                currentMissionIndex,
+                missions: missions.map(m => ({ completed: m.completed, claimed: m.claimed })),
+                buildings,
+                lastSpinTime: lastSpinTime ? lastSpinTime.toISOString() : null
+            };
+            localStorage.setItem('cityBuilderProgress', JSON.stringify(data));
+        }
+
+        function updateUI() {
+            coinCount.textContent = coins;
+            cashCount.textContent = cash;
+            populationCount.textContent = population;
+            xpCount.textContent = xp;
+            updateButtons();
+            updateSpinCooldown();
+        }
+
+        function selectBuilding(type) {
+            if (coins >= costs[type].coins && cash >= costs[type].cash) {
+                selectedBuilding = type;
+                removeMode = false;
+                updateToolbarWithCancel();
+                showBuildingOnCursor(type);
+            }
+        }
+
+        function updateButtons() {
+            houseBtn.disabled = coins < costs['house'].coins || cash < costs['house'].cash;
+            house2Btn.disabled = coins < costs['house-2'].coins || cash < costs['house-2'].cash;
+            hospitalBtn.disabled = coins < costs['hospital'].coins || cash < costs['hospital'].cash;
+            bankBtn.disabled = coins < costs['bank'].coins || cash < costs['bank'].cash;
+            officeBtn.disabled = coins < costs['office'].coins || cash < costs['office'].cash;
+            schoolBtn.disabled = coins < costs['school'].coins || cash < costs['school'].cash;
+            museumBtn.disabled = coins < costs['museum'].coins || cash < costs['museum'].cash;
+            removeBtn.disabled = false;
+            missionsBtn.disabled = false;
+            spinBtn.disabled = isSpinOnCooldown();
+        }
+
+        function updateToolbarWithCancel() {
+            toolbar.innerHTML = defaultToolbarContent + '<button class="cancel-button" id="cancel-btn">Cancel</button>';
+            setupToolbarButtons();
+            document.getElementById('cancel-btn').onclick = cancelPlacement;
+        }
+
+        function cancelPlacement() {
+            selectedBuilding = null;
+            cursorBuilding.style.display = 'none';
+            toolbar.innerHTML = defaultToolbarContent;
+            setupToolbarButtons();
+        }
+
+        function showBuildingOnCursor(type) {
+            cursorBuilding.className = 'building ' + type;
+            cursorBuilding.style.width = sizes[type] + 'px';
+            cursorBuilding.style.height = sizes[type] + 'px';
+            cursorBuilding.style.display = 'block';
+            document.addEventListener('mousemove', moveBuildingWithCursor);
+        }
+
+        function moveBuildingWithCursor(event) {
+            cursorBuilding.style.left = (event.clientX - sizes[selectedBuilding] / 2) + 'px';
+            cursorBuilding.style.top = (event.clientY - sizes[selectedBuilding] / 2) + 'px';
+        }
+
+        function checkOverlap(x, y, size) {
+            const buildings = gameArea.querySelectorAll('.building:not(#cursor-building)');
+            for (let building of buildings) {
+                const rect = building.getBoundingClientRect();
+                const buildingX = rect.left;
+                const buildingY = rect.top;
+                const buildingSize = parseInt(building.style.width);
+
+                if (x < buildingX + buildingSize &&
+                    x + size > buildingX &&
+                    y < buildingY + buildingSize &&
+                    y + size > buildingY) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function showMessage(text) {
+            messageText.innerHTML = text;
+            messageBox.style.display = 'flex';
+            closeMessage.onclick = () => {
+                messageBox.style.display = 'none';
+            };
+        }
+
+        function checkXPMilestone() {
+            const milestone = Math.floor(xp / 450) * 450;
+            if (milestone > lastMilestone && milestone >= 450) {
+                cash += 1;
+                cashCount.textContent = cash;
+                showMessage(`You have gained <img src="https://files.catbox.moe/1rnqci.png" width="20" height="20"> 1!`);
+                lastMilestone = milestone;
+                saveProgress();
+            }
+        }
+
+        function createCollectBubble(building, amount, onCollect) {
+            const bubble = document.createElement('div');
+            bubble.classList.add('collect-bubble');
+            bubble.innerHTML = `<img src="https://files.catbox.moe/uznq7t.png" width="20" height="20">`;
+            building.appendChild(bubble);
+
+            bubble.addEventListener('click', () => {
+                onCollect();
+                building.removeChild(bubble);
+                if (currentMissionIndex === 3) {
+                    coinsCollectedForMission += amount;
+                    updateMissions();
+                }
+                saveProgress();
+            });
+        }
+
+        function updateMissions() {
+            missionsList.innerHTML = '';
+            const currentMission = missions[currentMissionIndex];
+            if (currentMission) {
+                currentMission.completed = currentMission.check();
+                const missionDiv = document.createElement('div');
+                missionDiv.classList.add('mission');
+                if (currentMission.completed) missionDiv.classList.add('completed');
+                let progressText = currentMission.id === 4 ? ` (${coinsCollectedForMission}/700)` : '';
+                missionDiv.innerHTML = `
+                    <p>${currentMission.text}${progressText}</p>
+                    <p>Rewards: ${currentMission.rewards.xp} XP${currentMission.rewards.coins > 0 ? `, ${currentMission.rewards.coins} <img src="https://files.catbox.moe/uznq7t.png" width="12" height="12">` : ''}</p>
+                    ${currentMission.completed && !currentMission.claimed ? '<button class="claim-btn">Claim</button>' : ''}
+                `;
+                missionsList.appendChild(missionDiv);
+
+                if (currentMission.completed && !currentMission.claimed) {
+                    const claimBtn = missionDiv.querySelector('.claim-btn');
+                    claimBtn.addEventListener('click', () => claimReward(currentMission));
+                }
+            }
+        }
+
+        function claimReward(mission) {
+            xp += mission.rewards.xp;
+            coins += mission.rewards.coins;
+            xpCount.textContent = xp;
+            coinCount.textContent = coins;
+            mission.claimed = true;
+            currentMissionIndex++;
+            if (currentMissionIndex === 3) {
+                coinsCollectedForMission = 0;
+            }
+            updateMissions();
+            checkXPMilestone();
+            updateButtons();
+            saveProgress();
+        }
+
+        missionsBtn.addEventListener('click', () => {
+            missionsMenu.style.display = 'flex';
+            updateMissions();
+        });
+
+        missionsClose.addEventListener('click', () => {
+            missionsMenu.style.display = 'none';
+        });
+
+        // Spin Wheel Logic
+        const prizes = [
+            { value: 200, type: 'coins', chance: 60 },
+            { value: 300, type: 'coins', chance: 45 },
+            { value: 30, type: 'xp', chance: 55 },
+            { value: 75, type: 'xp', chance: 30 },
+            { value: 550, type: 'coins', chance: 13 },
+            { value: 1, type: 'cash', chance: 4.9 }
+        ];
+
+        function isSpinOnCooldown() {
+            if (!lastSpinTime) return false;
+            const now = new Date();
+            return (now - lastSpinTime) < COOLDOWN_MS;
+        }
+
+        function updateSpinCooldown() {
+            if (isSpinOnCooldown()) {
+                const remainingMs = COOLDOWN_MS - (new Date() - lastSpinTime);
+                const hours = Math.floor(remainingMs / (1000 * 60 * 60));
+                const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
+                spinCooldown.textContent = `Cooldown: ${hours}h ${minutes}m ${seconds}s`;
+                spinAction.disabled = true;
+                spinBtn.disabled = true;
+            } else {
+                spinCooldown.textContent = '';
+                spinAction.disabled = false;
+                spinBtn.disabled = false;
+            }
+        }
+
+        function spinWheel() {
+            const totalChance = prizes.reduce((sum, p) => sum + p.chance, 0);
+            let random = Math.random() * totalChance;
+            let prize = null;
+            for (let p of prizes) {
+                if (random < p.chance) {
+                    prize = p;
+                    break;
+                }
+                random -= p.chance;
+            }
+
+            const spins = 5 + Math.floor(Math.random() * 5); // 5-9 full spins
+            const degreesPerPrize = 360 / prizes.length;
+            const prizeIndex = prizes.indexOf(prize);
+            const finalAngle = (spins * 360) + (prizeIndex * degreesPerPrize) + (Math.random() * degreesPerPrize);
+            
+            wheel.style.transform = `rotate(${finalAngle}deg)`;
+            spinAction.disabled = true;
+
+            setTimeout(() => {
+                if (prize.type === 'coins') {
+                    coins += prize.value;
+                    coinCount.textContent = coins;
+                    showMessage(`You won ${prize.value} <img src="https://files.catbox.moe/uznq7t.png" width="20" height="20">!`);
+                } else if (prize.type === 'xp') {
+                    xp += prize.value;
+                    xpCount.textContent = xp;
+                    showMessage(`You won ${prize.value} XP!`);
+                    checkXPMilestone();
+                } else if (prize.type === 'cash') {
+                    cash += prize.value;
+                    cashCount.textContent = cash;
+                    showMessage(`You won ${prize.value} <img src="https://files.catbox.moe/1rnqci.png" width="20" height="20">!`);
+                }
+                lastSpinTime = new Date();
+                updateSpinCooldown();
+                saveProgress();
+                wheel.style.transform = 'rotate(0deg)';
+                spinAction.disabled = false;
+            }, 3000);
+        }
+
+        spinBtn.addEventListener('click', () => {
+            if (!isSpinOnCooldown()) {
+                spinMenu.style.display = 'flex';
+                updateSpinCooldown();
+            }
+        });
+
+        spinAction.addEventListener('click', () => {
+            if (!isSpinOnCooldown()) {
+                spinWheel();
+            }
+        });
+
+        spinClose.addEventListener('click', () => {
+            spinMenu.style.display = 'none';
+        });
+
+        setInterval(updateSpinCooldown, 1000);
+
+        function setupHospital(hospital) {
+            let collected = 0;
+            const interval = setInterval(() => {
+                if (collected < 20) {
+                    collected += 20;
+                    createCollectBubble(hospital, 20, () => {
+                        coins += collected;
+                        coinCount.textContent = coins;
+                        collected = 0;
+                        updateButtons();
+                    });
+                }
+            }, 15000);
+
+            hospital.addEventListener('click', (e) => {
+                if (removeMode) {
+                    clearInterval(interval);
+                    hospitals = hospitals.filter(h => h.element !== hospital);
+                    hospital.remove();
+                    population -= populationValues['hospital'];
+                    coins += Math.floor(costs['hospital'].coins / 2);
+                    populationCount.textContent = population;
+                    coinCount.textContent = coins;
+                    updateMissions();
+                    updateButtons();
+                    saveProgress();
+                }
+            });
+
+            hospitals.push({ element: hospital, collected: collected, interval: interval });
+        }
+
+        function setupBank(bank) {
+            let collected = 0;
+            const interval = setInterval(() => {
+                if (collected < 50) {
+                    collected += 50;
+                    createCollectBubble(bank, 50, () => {
+                        coins += collected;
+                        coinCount.textContent = coins;
+                        collected = 0;
+                        updateButtons();
+                    });
+                }
+            }, 20000);
+
+            bank.addEventListener('click', (e) => {
+                if (removeMode) {
+                    clearInterval(interval);
+                    banks = banks.filter(b => b.element !== bank);
+                    bank.remove();
+                    population -= populationValues['bank'];
+                    coins += Math.floor(costs['bank'].coins / 2);
+                    populationCount.textContent = population;
+                    coinCount.textContent = coins;
+                    updateMissions();
+                    updateButtons();
+                    saveProgress();
+                }
+            });
+
+            banks.push({ element: bank, collected: collected, interval: interval });
+        }
+
+        function setupOffice(office) {
+            let collected = 0;
+            const interval = setInterval(() => {
+                if (collected < 75) {
+                    collected += 75;
+                    createCollectBubble(office, 75, () => {
+                        coins += collected;
+                        coinCount.textContent = coins;
+                        collected = 0;
+                        updateButtons();
+                    });
+                }
+            }, 23000);
+
+            office.addEventListener('click', (e) => {
+                if (removeMode) {
+                    clearInterval(interval);
+                    offices = offices.filter(o => o.element !== office);
+                    office.remove();
+                    population -= populationValues['office'];
+                    coins += Math.floor(costs['office'].coins / 2);
+                    populationCount.textContent = population;
+                    coinCount.textContent = coins;
+                    updateMissions();
+                    updateButtons();
+                    saveProgress();
+                }
+            });
+
+            offices.push({ element: office, collected: collected, interval: interval });
+        }
+
+        function setupSchool(school) {
+            let collected = 0;
+            const interval = setInterval(() => {
+                if (collected < 150) {
+                    collected += 150;
+                    createCollectBubble(school, 150, () => {
+                        coins += collected;
+                        coinCount.textContent = coins;
+                        collected = 0;
+                        updateButtons();
+                    });
+                }
+            }, 50000);
+
+            school.addEventListener('click', (e) => {
+                if (removeMode) {
+                    clearInterval(interval);
+                    schools = schools.filter(s => s.element !== school);
+                    school.remove();
+                    population -= populationValues['school'];
+                    coins += Math.floor(costs['school'].coins / 2);
+                    populationCount.textContent = population;
+                    coinCount.textContent = coins;
+                    updateMissions();
+                    updateButtons();
+                    saveProgress();
+                }
+            });
+
+            schools.push({ element: school, collected: collected, interval: interval });
+        }
+
+        function setupMuseum(museum) {
+            let collected = 0;
+            const interval = setInterval(() => {
+                if (collected < 223) {
+                    collected += 223;
+                    createCollectBubble(museum, 223, () => {
+                        coins += collected;
+                        coinCount.textContent = coins;
+                        collected = 0;
+                        updateButtons();
+                    });
+                }
+            }, 30000);
+
+            museum.addEventListener('click', (e) => {
+                if (removeMode) {
+                    clearInterval(interval);
+                    museums = museums.filter(m => m.element !== museum);
+                    museum.remove();
+                    population -= populationValues['museum'];
+                    coins += Math.floor(costs['museum'].coins / 2);
+                    populationCount.textContent = population;
+                    coinCount.textContent = coins;
+                    updateMissions();
+                    updateButtons();
+                    saveProgress();
+                }
+            });
+
+            museums.push({ element: museum, collected: collected, interval: interval });
+        }
+
+        function setupToolbarButtons() {
+            const newHouseBtn = document.getElementById('house-btn');
+            const newHouse2Btn = document.getElementById('house-2-btn');
+            const newHospitalBtn = document.getElementById('hospital-btn');
+            const newBankBtn = document.getElementById('bank-btn');
+            const newOfficeBtn = document.getElementById('office-btn');
+            const newSchoolBtn = document.getElementById('school-btn');
+            const newMuseumBtn = document.getElementById('museum-btn');
+            const newRemoveBtn = document.getElementById('remove-btn');
+
+            newHouseBtn.onclick = () => selectBuilding('house');
+            newHouse2Btn.onclick = () => selectBuilding('house-2');
+            newHospitalBtn.onclick = () => selectBuilding('hospital');
+            newBankBtn.onclick = () => selectBuilding('bank');
+            newOfficeBtn.onclick = () => selectBuilding('office');
+            newSchoolBtn.onclick = () => selectBuilding('school');
+            newMuseumBtn.onclick = () => selectBuilding('museum');
+            newRemoveBtn.onclick = () => {
+                removeMode = true;
+                selectedBuilding = null;
+                cursorBuilding.style.display = 'none';
+                toolbar.innerHTML = defaultToolbarContent;
+                setupToolbarButtons();
+            };
+            
+            updateButtons();
+        }
+
+        gameArea.addEventListener('click', function(event) {
+            if (removeMode) {
+                const target = event.target;
+                if (target.classList.contains('building') && !target.classList.contains('hospital') && !target.classList.contains('bank') && !target.classList.contains('office') && !target.classList.contains('school') && !target.classList.contains('museum')) {
+                    const buildingType = target.classList[1];
+                    target.remove();
+                    population -= populationValues[buildingType];
+                    coins += Math.floor(costs[buildingType].coins / 2);
+                    populationCount.textContent = population;
+                    coinCount.textContent = coins;
+                    updateMissions();
+                    updateButtons();
+                    saveProgress();
+                }
+                return;
+            }
+
+            if (selectedBuilding && coins >= costs[selectedBuilding].coins && cash >= costs[selectedBuilding].cash) {
+                const rect = gameArea.getBoundingClientRect();
+                const size = sizes[selectedBuilding];
+                const x = event.clientX - rect.left - size / 2;
+                const y = event.clientY - rect.top - size / 2;
+
+                if (checkOverlap(x, y, size)) {
+                    return;
+                }
+
+                const building = document.createElement('div');
+                building.classList.add('building', selectedBuilding);
+                building.style.left = x + 'px';
+                building.style.top = y + 'px';
+
+                gameArea.appendChild(building);
+                coins -= costs[selectedBuilding].coins;
+                cash -= costs[selectedBuilding].cash;
+                population += populationValues[selectedBuilding];
+                xp += xpValues[selectedBuilding];
+                coinCount.textContent = coins;
+                cashCount.textContent = cash;
+                populationCount.textContent = population;
+                xpCount.textContent = xp;
+                checkXPMilestone();
+                updateMissions();
+                updateButtons();
+                saveProgress();
+
+                if (selectedBuilding === 'hospital') {
+                    setupHospital(building);
+                } else if (selectedBuilding === 'bank') {
+                    setupBank(building);
+                } else if (selectedBuilding === 'office') {
+                    setupOffice(building);
+                } else if (selectedBuilding === 'school') {
+                    setupSchool(building);
+                } else if (selectedBuilding === 'museum') {
+                    setupMuseum(building);
+                }
+
+                selectedBuilding = null;
+                cursorBuilding.style.display = 'none';
+                document.removeEventListener('mousemove', moveBuildingWithCursor);
+                toolbar.innerHTML = defaultToolbarContent;
+                setupToolbarButtons();
+            }
+        });
+
+        // Initial setup
+        loadProgress();
+        setupToolbarButtons();
+    </script>
+</body>
+</html>
